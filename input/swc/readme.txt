@@ -1,6 +1,7 @@
 rn0514  ：RN用のswcファイルが保存されているディレクトリ
 
 717_registrated_v3.swc	：PNのswcファイル、現状１種類で接続する糸球体を変えて実装
+717_readme.txt : 717のコンパートメントについての詳細ファイル
 
 040823_5_sn_bestrigid0106_mkRegion.swc　：LNのswcファイル１種類目
 050205_7_sn_bestrigid0106_mkRegion.swc　：LNのswcファイル２種類目

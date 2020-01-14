@@ -24,10 +24,10 @@
 {load_file("nrngui.hoc")}
 {load_file("stdlib.hoc")}
 
-{load_file("CellSwc3.hoc")}
-{load_file("loadinfo.hoc")}
-{load_file("areaList.hoc")}
-{load_file("exSectionList.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/CellSwc3.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/loadinfo.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/areaList.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/exSectionList.hoc")}
 //{load_file("declare_parameters.hoc")}
 //************************************************
 // For Goto's PN model parameter
@@ -110,10 +110,11 @@ strdef zerong_olfactory_spt_file_dir, halfng_olfactory_spt_file_dir, olfactory_s
         }
 
 
-strdef FPRINT_DIR, SPIKEOUT_DIR
+strdef FPRINT_DIR, SPIKEOUT_DIR, WEIGHT_DIR
 if(IS_SUPERCOMPUTER == 1){
-    FPRINT_DIR = "./"
-    SPIKEOUT_DIR = "./"
+    sprint(FPRINT_DIR, "./result/%7d/record/%7d", PREFIX, PREFIX)
+    sprint(SPIKEOUT_DIR, "./result/%7d/spike/%7d", PREFIX, PREFIX)
+    sprint(WEIGHT_DIR, "./result/%7d/weight/%7d", PREFIX, PREFIX)
 }else{
     sprint(FPRINT_DIR,"../result/%010d/record/",START_TIME)
     sprint(SPIKEOUT_DIR,"../result/%010d/spike/",START_TIME)
@@ -154,8 +155,66 @@ proc mkNetwork(){
 
     mkConnections()
 }
-{load_file("divider.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/divider.hoc")}
 objref CELLM
+
+proc initModel_PN() { local r, rr localobj pn
+    r  = SPIKEGEN_RATIO
+    rr  = 1000
+    pn = $o1
+
+    pn forall {
+       uninsert pas
+       uninsert GPeA
+    }
+
+    forsec pn.noaxonlist {
+        insert pas
+        e_pas = -60
+        g_pas = 0.00035
+        cm = 1
+    }
+
+    forsec pn.axonlist {
+        insert GPeA
+        ena_GPeA = 55
+        ek_GPeA = -70
+        eca_GPeA = 124
+        el_GPeA = -50
+        //a_m_GPeA = 0.065
+        a_m_GPeA = 0.048
+        //a_W_GPeA = 0.055
+        a_W_GPeA = 0.060
+
+        gnabar   = 120e-3
+        gkdrbar  = 5e-3
+        gl  = 0.3e-3
+        gcatbar   = 0.1e-3
+        gkcabar   = 2e-3
+        gA =  220e-3
+    }
+	
+    forsec pn.spikegenlist {
+        insert GPeA
+        ena_GPeA = 55
+        ek_GPeA = -70
+        eca_GPeA = 124
+        el_GPeA = -50
+        //a_m_GPeA = 0.065
+        a_m_GPeA = 0.048
+        //a_W_GPeA = 0.055
+        a_W_GPeA = 0.060
+
+
+        gnabar = 120e-3 * SPIKEGEN_RATIO
+	gkdrbar = 120e-3 * SPIKEGEN_RATIO
+        gl  = 0.3e-3
+        gcatbar   = 0.1e-3
+        gkcabar   = 2e-3
+        gA =  220e-3
+
+    }
+}
 
 proc mkCells(){localobj pn,ln,rn, nc, nil
     loadinfo(info_filename)
@@ -175,15 +234,19 @@ proc mkCells(){localobj pn,ln,rn, nc, nil
             pn = new CellSwc(pn_path[j].swcpath,pn_matrix.x[j][0],pn_matrix.x[j][1],pn_matrix.x[j][2],pn_matrix.x[j][3],pn_matrix.x[j][4])
             pn.setPath(pn_path[j].ppath, pn_path[j].synpath)
             pn.setNid()
+	    AXON_POS = 20
+	    AXON_SIZE = 25
+            pn.setAxonlist(AXON_POS, AXON_SIZE)
+
 	    SPIKEGEN_POS = 24
 	    SPIKEGEN_SIZE = 3
             pn.setSpikegenlist(SPIKEGEN_POS, SPIKEGEN_SIZE)
 	    printf("SPIKEGEN_POS: %d\n",SPIKEGEN_POS)	
             //pn.spikegenlist.printnames()
 
-            //initModel_PN(pn)
+            initModel_PN(pn)
             //pn.insertFukuda_tunned(GBAR_TIMES_PN)
-            pn.insertFukuda_tunned()
+            //pn.insertFukuda_tunned()
 
             pns.append(pn)
             //print "pn ", i, j
@@ -266,7 +329,7 @@ proc mkCells(){localobj pn,ln,rn, nc, nil
     pc.barrier()
 }
 
-{load_file("connect.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/connect.hoc")}
 proc mkConnections(){
     connectRNtoOthers(LEARNING)
     connect_vec_stim(mechano_spt_file_dir, DOSE, NSTIM)
@@ -279,7 +342,7 @@ if(pc.id==0)print "MAKE NETWORK"
 mkNetwork()
 pc.barrier()
 
-{load_file("stim.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/stim.hoc")}
 proc mkStimulations(){
     mkSerialStim(zerong_olfactory_spt_file_dir, halfng_olfactory_spt_file_dir, olfactory_spt_file_dir)
 }
@@ -291,7 +354,7 @@ pc.barrier()
 
 
 
-{load_file("recorder.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/recorder.hoc")}
 
 proc setRecorder(){
     setVoltageRecord(0)
@@ -333,7 +396,7 @@ strdef rwfilename
 
 if (SAVE_ALL == 1) {
     strdef output_filename
-    savestep = 0.25
+    savestep = 0.025
     numstep = int(tstop/savestep)
 
     pc.barrier()
@@ -348,23 +411,23 @@ if (SAVE_ALL == 1) {
 		 printf("******************** t = %f\n", t)
 	   }
 	}
-
+	// first 1000ms
 	if(tstep<int(2000/savestep) && tstep>int(1000/savestep)){
-	if(pc.id == NPN+8){ // when 301****
-	    sprint(output_filename, "%s%dt%f.dat", FPRINT_DIR, lns.o(0).nid, t)
-            lns.o(0).saveData(output_filename)
+	if(pc.id == 2){ // when 301****
+	    sprint(output_filename, "%s%dt%f.dat", FPRINT_DIR, pns.o(0).nid, t)
+            pns.o(0).saveData(output_filename)
         }
 	}
+	// last 1000 ms
 	if(tstep<int(tstop/savestep) && tstep>int((tstop-1000)/savestep)){
-	if(pc.id == NPN+8){ // when 301****
-	    sprint(output_filename, "%s%dt%f.dat", FPRINT_DIR, lns.o(0).nid, t)
-            lns.o(0).saveData(output_filename)
+	if(pc.id == 2){ // when 301****
+	    sprint(output_filename, "%s%dt%f.dat", FPRINT_DIR, pns.o(0).nid, t)
+            pns.o(0).saveData(output_filename)
         }
 	}
     }
     
     pc.barrier()
-
 } else {
 
 
@@ -415,7 +478,7 @@ if (SAVE_ALL == 1) {
     wmt.resize(vweight.size(), 2)
     wmt.setcol(0, volt_tvec)
     wmt.setcol(1, lvweight.object(i))
-    sprint(wfilename, "%sL%03dweight.lweight", FPRINT_DIR, i)
+    sprint(wfilename, "%sL%03dweight.lweight", WEIGHT_DIR, i)
     wfile.wopen(wfilename)
     wmt.fprint(wfile,"%5.5f\t")
     wfile.close()
@@ -430,7 +493,7 @@ if (SAVE_ALL == 1) {
     rwmt.resize(rvweight.size(), 2)
     rwmt.setcol(0, volt_tvec)
     rwmt.setcol(1, rvweight)
-    sprint(rwfilename, "%s%02dweight.rweight", FPRINT_DIR, pc.id)
+    sprint(rwfilename, "%s%02dweight.rweight", WEIGHT_DIR, pc.id)
     rwfile.wopen(rwfilename)
     rwmt.fprint(rwfile,"%5.5f\t")
     rwfile.close()

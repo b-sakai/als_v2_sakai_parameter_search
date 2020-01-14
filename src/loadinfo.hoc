@@ -35,7 +35,7 @@ pn_matrix = new Matrix()
 ln_matrix = new Matrix()
 rn_matrix = new Matrix()
 
-{load_file("Path.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/Path.hoc")}
 objref pn_path[100], ln_path[500], rn_path[20000]
 objref GID_VEC
 GID_VEC = new Vector()
@@ -109,7 +109,7 @@ func loadinfo(){local num_pn, num_ln, num, c_gid, cellid, swcid, cloneid, gloid 
     }
     return 0
 }
-{load_file("SynPath.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/SynPath.hoc")}
 objref SynPathList
 SynPathList = new List()
 func loadSynapseInfo(){local i,pregid,postgid,pre_nid,post_nid,ndata,mode localobj syn_fp, cell, synp

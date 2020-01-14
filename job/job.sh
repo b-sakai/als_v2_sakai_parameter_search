@@ -88,7 +88,8 @@ NRNOPT=\
 " -c GABAB_GMAX_LTOL=0.0"\
 " -c GBAR_TIMES_LN=1.0"\
 " -c GBAR_TIMES_PN=1.0"\
-" -c LEARNING=1"
+" -c LEARNING=1"\
+" -c STDP_MUL=0.1"
 
 MPIEXEC="mpiexec -mca mpi_print_stats 1"
 PROF=""

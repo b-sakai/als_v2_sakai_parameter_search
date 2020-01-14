@@ -33,9 +33,9 @@ public connect2target
 public mkSyn,mkExp2Syn
 public mkSynapses, synapses
 public mkPRL_GABA, mkDUMMY, mkNET_GABAa, mkNET_GABAb, mkNET_STDP, mkNET_GABA_STDP
-public setPath, setNid, setGid, setSpikegenlist
+public setPath, setNid, setGid, setSpikegenlist, setAxonlist
 public setIntermitStim_gaus,setIClamp, mkIclamp, setIClamp_with_Latency
-public insertHH, insertHH_RN, insertLNlla, insertFukuda_tunned
+public insertHH, insertHH_RN, insertLNlla, insertFukuda_tunned, initModel_PN
 public getAxon
 public setSpikeRecord, setMultiSpikeRecord, fprintSpikeRecord, RNfprintSpikeRecord, fprintMultiSpikeRecord
 public setNSEG
@@ -49,7 +49,7 @@ public synlist, synlist_fromMRN, synapse, synlist_general_odor
 public SynNumberList, numSynapse
 public SynPathList //Synapse information file path list
 public fromRNsyn, fromMRNsyn, general_odor_syn
-public axonlist, cellbodylist, dendlist, noaxonlist, spikegenlist
+public axonlist, cellbodylist, noaxonlist, spikegenlist
 public Delay
 
 // will be re-created in shape()
@@ -384,8 +384,8 @@ func countSL() {local i
 proc setSpikegenlist(){local j, axonnum localobj tmplist
     SPIKEGEN_POS  = $1
     SPIKEGEN_SIZE = $2
-
-    noaxonlist   = new SectionList()
+    
+    noaxonlist	 = new SectionList()
     spikegenlist = new SectionList()
 
     this.Dend[0] noaxonlist.wholetree()
@@ -400,6 +400,22 @@ proc setSpikegenlist(){local j, axonnum localobj tmplist
     tmplist.o(j).sec spikegenlist.append()
     j+=1
     }
+}
+
+
+proc setAxonlist(){local j
+    AXON_POS  = $1
+    AXON_SIZE = $2
+
+    axonlist = new SectionList()
+
+    AXON_POS = int(AXON_POS)
+    AXON_SIZE = int(AXON_SIZE)
+    j = AXON_POS
+    while(j < AXON_POS+AXON_SIZE) {
+    	    axonlist.append()
+    j+=1
+    }     
 }
 
 strdef ppath, synpath
@@ -504,6 +520,51 @@ proc insertFukuda_tunned(){//local r
     }
 }
 
+proc initModel_PN() { local r, rr localobj pn
+    r  = 200
+    rr  = 10
+    pn = $o1
+
+    pn forall {
+        insert GPeA
+        ena_GPeA = 55
+        ek_GPeA = -70
+        eca_GPeA = 124
+        el_GPeA = -50
+        //a_m_GPeA = 0.065
+        a_m_GPeA = 0.048
+        //a_W_GPeA = 0.055
+        a_W_GPeA = 0.060
+
+        gnabar   = 120e-3 / rr
+        gkdrbar  = 5e-3 / rr
+        gl  = 0.3e-3 / rr
+        gcatbar   = 0.1e-3 / rr
+        gkcabar   = 2e-3 / rr
+        gA =  220e-3
+    }
+	
+    forsec pn.spikegenlist {
+        insert GPeA
+        ena_GPeA = 55
+        ek_GPeA = -70
+        eca_GPeA = 124
+        el_GPeA = -50
+        //a_m_GPeA = 0.065
+        a_m_GPeA = 0.048
+        //a_W_GPeA = 0.055
+        a_W_GPeA = 0.060
+
+
+        gnabar = 120e-3 * r
+	gkdrbar = 120e-3 * r
+        gl  = 0.3e-3
+        gcatbar   = 0.1e-3
+        gkcabar   = 2e-3
+        gA =  220e-3
+
+    }
+}
 
 objref syn_
 obfunc makeSyn() { local targetno localobj r
@@ -547,16 +608,18 @@ proc mkSynapses(){local i
     str1 = $s1
     type = $2 // type = 0: synapse from ORN, type = 1: synapse from MRN, type = 2: synapse from general odor receptor
     learning = $3
+    stdp_mul = $4
+    stdp_pn_d = $5
     ReadSynlist(str1)
 
     for i=0, SynNumberList.size()-1{
 
     if(type == 0){
-        synapses(SynNumberList.x[i], learning)
+        synapses(SynNumberList.x[i], learning, stdp_mul, stdp_pn_d)
     } else if (type == 1){
-        synapses_fromMRN(SynNumberList.x[i], learning)
+        synapses_fromMRN(SynNumberList.x[i], learning, stdp_mul, stdp_pn_d)
     } else if (type == 2){
-        synapses_general_odor(SynNumberList.x[i], learning)
+        synapses_general_odor(SynNumberList.x[i], learning, stdp_mul, stdp_pn_d)
     }
 
     }
@@ -570,8 +633,10 @@ proc synapses(){local targetno, tau, tau1, tau2, dtau, d, rev_e, learnig
     tau  = 1
     dtau = 50
     rev_e = 0
+    stdp_mul = $3
+    stdp_pn_d = $4
     if(cellid == 2){
-    	d = 3
+    	d = stdp_pn_d
     } else {
         d = 1
     }
@@ -582,28 +647,36 @@ proc synapses(){local targetno, tau, tau1, tau2, dtau, d, rev_e, learnig
     syn__.dtau = dtau
     syn__.d = d
     syn__.e = rev_e
+    syn__.LR = stdp_mul
     syn__.maxWeight = 1.0
+    syn__.minWeight = 0.0025
     syn__.learning = learning
     this.Dend[targetno] syn__ = new ExpSynSTDP(0.4) synlist.append(syn__)
     syn__.tau = tau
     syn__.dtau = dtau
     syn__.d = d
     syn__.e = rev_e
+    syn__.LR = stdp_mul
     syn__.maxWeight = 1.0
+    syn__.minWeight = 0.0025
     syn__.learning = learning
     this.Dend[targetno] syn__ = new ExpSynSTDP(0.6) synlist.append(syn__)
     syn__.tau = tau
     syn__.dtau = dtau
     syn__.d = d
     syn__.e = rev_e
+    syn__.LR = stdp_mul
     syn__.maxWeight = 1.0
+    syn__.minWeight = 0.0025
     syn__.learning = learning
     this.Dend[targetno] syn__ = new ExpSynSTDP(0.8) synlist.append(syn__)
     syn__.tau = tau
     syn__.dtau = dtau
     syn__.d = d
     syn__.e = rev_e
+    syn__.LR = stdp_mul
     syn__.maxWeight = 1.0
+    syn__.minWeight = 0.0025
     syn__.learning = learning
 }
 
@@ -739,8 +812,9 @@ obfunc mkNET_STDP(){local comp
     learning = $2
     this.Dend[comp] stdp = new ExpSynSTDP(0.5)
     stdp.e = 0
-    stdp.tau = 100.0
-    stdp.maxWeight = 10
+    stdp.tau = 1.0
+    stdp.dtau = 50.0
+    stdp.maxWeight = 1.0
     stdp.learning = learning 
     return stdp
 }
@@ -752,6 +826,8 @@ obfunc mkNET_GABA_STDP(){local comp
     gmax = $2
     learning = $3
     this.Dend[comp] gaba_stdp = new NET_GABAa_STDP(0.5)
+    stdp.tau = 1.0
+    stdp.dtau = 50.0
     gaba_stdp.gmax = gmax
     gaba_stdp.Erev = 0
     gaba_stdp.maxWeight = 1.0

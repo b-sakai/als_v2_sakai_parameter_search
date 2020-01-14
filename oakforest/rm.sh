@@ -1,0 +1,12 @@
+rm ./*lt.txt
+rm ./*.dat
+rm ./*.rndat
+rm ./*.rweight
+rm ./*.lweight
+rm ./job.sh.*
+rm ./multi_job.sh.*
+rm ./all_multi_job.sh.*
+rm ./test.sh.*
+rm ./test2.sh.*
+rm ./*~
+rm ./*#

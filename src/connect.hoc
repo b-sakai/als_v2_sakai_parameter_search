@@ -18,8 +18,8 @@
 //
 //************************************************
 
-{load_file("loadinfo.hoc")}
-{load_file("stim.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/loadinfo.hoc")}
+{load_file("/work/hp160269/m49005/als_v2_sakai_parameter_search/src/stim.hoc")}
 
 NUM_GLO = 60
 NUMSYNAPSE_PER_PN = 100
@@ -116,7 +116,7 @@ proc mkPostSynapseOfRN(){local i,j,gid_base,src_gid,gloid, maxnum localobj targe
     if(pc.gid_exists(GID_VEC.x[i])){
         target = pc.gid2obj(GID_VEC.x[i])
         loadSynapseInfo(target, target.synpath, 100)
-        target.mkSynapses(target.fromRNsyn, 0, learning)
+        target.mkSynapses(target.fromRNsyn, 0, learning, STDP_MUL, STDP_PN_D)
 
 	gloid = pns.object(0).gloid
         printf("target.synlist.count() : %d [%d] gloid = %d\n",target.synlist.count(),pc.id, gloid)
@@ -143,7 +143,7 @@ proc mkPostSynapseOfRN(){local i,j,gid_base,src_gid,gloid, maxnum localobj targe
         loadSynapseInfo(target, target.synpath, 100)
         sprint(path, "%s/30%d_%02d_glomerulars.dat", target.fromRNsyn, lns.object(0).swcid, gloid)
 	printf("lnpath check %s\n", path)
-        target.mkSynapses(path, 0, learning)
+        target.mkSynapses(path, 0, learning, STDP_MUL, STDP_PN_D)
         printf("target.synlist.count() : %d [%d]\n",target.synlist.count(),pc.id)
 
 	if(target.synlist.count() < NUMSYNAPSE_PER_GLO_LN){
@@ -230,7 +230,7 @@ proc connect_vec_stim(){ local i, j, dose, nstim localobj rnd, target, post_syn,
     for i=0, lns.count()-1{
         target = lns.object(i)
         loadSynapseInfo(target, target.synpath, 100)
-        target.mkSynapses(target.fromMRNsyn, 1, learning)
+        target.mkSynapses(target.fromMRNsyn, 1, learning, STDP_MUL, STDP_PN_D)
         printf("target.synlist_fromMRN.count() : %d [%d]\n",target.synlist_fromMRN.count(),pc.id)
 
         for j=0, target.synlist_fromMRN.count()-1{ // mechano input
@@ -514,12 +514,12 @@ proc makeNET_LtoPsynapse(){local pre_cell, post_cell, gmax_a,gmax_b, delay, weig
         post = pc.gid2obj(post_cell)
         for i=0, post_comps.size()-1{
         //printf("POST: %d, GID : %d, i : %d, [%d]\n",post_cell,gidVec.x[i],i,pc.id)
-	if(i%2 == 0){
+	if(i < 3){
 	    stdp = post.mkNET_STDP(post_comps.x[i], LEARNING)
             gabalist.append(stdp)
             nc = pc.gid_connect(gidVec.x[i], stdp)
             nc.delay = delay
-            nc.weight = 5.0
+            nc.weight = 0.0
             nclist_NtoN.append(nc)
 	    nclist_LtoPstdp.append(nc)
 	}else{

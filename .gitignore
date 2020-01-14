@@ -37,6 +37,7 @@ input/synapse_list/*/escape.d/
 
 # jobfile dir
 job/jobfile/
+oakforest/result/
 
 # recorded files
 record/
